@@ -1,0 +1,82 @@
+using System;
+
+class Program
+{
+    static int[] firstOctave = new int[] { 261, 293, 329, 349, 392, 440, 493 }; 
+    static int currentOctave = 4; 
+
+    static void Main(string[] args)
+    {
+        bool isRunning = true;
+        Console.WriteLine("Используйте клавиши на клавиатуре для игры на пианино.");
+        Console.WriteLine("Нажмите F1, F2, F3 для переключения октав. Нажмите Esc для выхода.");
+
+        while (isRunning)
+        {
+        
+
+           
+            var a = Console.ReadKey(true);
+            if (a.Key == ConsoleKey.Escape)
+            {
+                isRunning = false;
+            }
+            else if (a.Key == ConsoleKey.F1)
+            {
+                currentOctave = 3;
+                Console.WriteLine("Переключено на октаву 3.");
+            }
+            else if (a.Key == ConsoleKey.F2)
+            {
+                currentOctave = 4;
+                Console.WriteLine("Переключено на октаву 4.");
+            }
+            else if (a.Key == ConsoleKey.F3)
+            {
+                currentOctave = 5;
+                Console.WriteLine("Переключено на октаву 5.");
+            }
+            else
+            {
+                PlaySound(a.Key);
+                
+            }
+        }
+    }
+
+    static void PlaySound(ConsoleKey key)
+    {
+        int q = -1;
+
+        switch (key)
+        {
+            case ConsoleKey.A:
+                q = 0;
+                break;
+            case ConsoleKey.S:
+                q = 1;
+                break;
+            case ConsoleKey.D:
+                q = 2;
+                break;
+            case ConsoleKey.F:
+                q = 3;
+                break;
+            case ConsoleKey.G:
+                q = 4;
+                break;
+            case ConsoleKey.H:
+                q = 5;
+                break;
+            case ConsoleKey.J:
+                q = 6;
+                break;
+        }
+
+        if (q >= 0)
+        {
+            int s = firstOctave[q] * (int)Math.Pow(2, currentOctave - 4);
+            Console.Beep(s, 500); 
+        }
+    }
+}

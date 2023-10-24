@@ -1,0 +1,96 @@
+using System;
+using System.Collections.Generic;
+
+class Program
+{
+    static List<Note> notes = new List<Note>();
+
+    static void Main(string[] args)
+    {
+        InitializeNotes();
+
+        
+        DateTime currentDate = DateTime.Now;
+
+        bool isRunning = true;
+        while (isRunning)
+        {
+            Console.Clear();
+            DisplayMenu(currentDate);
+
+            ConsoleKeyInfo keyInfo = Console.ReadKey();
+            switch (keyInfo.Key)
+            {
+                case ConsoleKey.LeftArrow:
+                    currentDate = currentDate.AddDays(-1);
+                    break;
+                case ConsoleKey.RightArrow:
+                    currentDate = currentDate.AddDays(1);
+                    break;
+                case ConsoleKey.Enter:
+                    DisplayNoteDetails(currentDate);
+                    break;
+                case ConsoleKey.Escape:
+                    isRunning = false;
+                    break;
+            }
+        }
+    }
+
+    static void InitializeNotes()
+    {
+        
+        notes.Add(new Note("Заметка 1", "ЙЦУ", new DateTime(2023, 10, 23)));
+        notes.Add(new Note("Заметка 2", "ФЫВ", new DateTime(2023, 10, 24)));
+        notes.Add(new Note("Заметка 3", "АКЙ", new DateTime(2023, 10, 25)));
+    }
+
+    static void DisplayMenu(DateTime currentDate)
+    {
+        Console.WriteLine($"Ежедневник - {currentDate.ToShortDateString()}\n");
+
+        foreach (Note note in notes)
+        {
+            if (note.Date.Date == currentDate.Date)
+            {
+                Console.WriteLine(note.Title);
+            }
+        }
+
+        Console.WriteLine("\nИспользуйте стрелки для переключения даты, Enter для просмотра деталей заметки, Escape для выхода.");
+    }
+
+    static void DisplayNoteDetails(DateTime currentDate)
+    {
+        Console.Clear();
+        Console.WriteLine($"Заметки на {currentDate.ToShortDateString()}:\n");
+
+        foreach (Note note in notes)
+        {
+            if (note.Date.Date == currentDate.Date)
+            {
+                Console.WriteLine($"Название: {note.Title}");
+                Console.WriteLine($"Описание: {note.Description}");
+                Console.WriteLine($"Дата выполнения: {note.Date.ToShortDateString()}");
+                Console.WriteLine();
+            }
+        }
+
+        Console.WriteLine("Нажмите любую клавишу, чтобы вернуться в меню.");
+        Console.ReadKey();
+    }
+}
+
+class Note
+{
+    public string Title { get; set; }
+    public string Description { get; set; }
+    public DateTime Date { get; set; }
+
+    public Note(string title, string description, DateTime date)
+    {
+        Title = title;
+        Description = description;
+        Date = date;
+    }
+}

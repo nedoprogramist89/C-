@@ -1,0 +1,207 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+class CakeOrder
+{
+    private Menu shapeMenu;
+    private Menu sizeMenu;
+    private Menu flavorMenu;
+    private Menu quantityMenu;
+    private Menu glazeMenu;
+    private Menu decorMenu;
+    private List<Dictionary<string, MenuItem>> cakes;
+
+    public CakeOrder()
+    {
+        shapeMenu = new Menu("Форма", new List<MenuItem>
+        {
+            new MenuItem("Круглая", 100),
+            new MenuItem("Прямоугольная", 150),
+            new MenuItem("Сердце", 200)
+        });
+
+        sizeMenu = new Menu("Размер", new List<MenuItem>
+        {
+            new MenuItem("Маленький", 50),
+            new MenuItem("Средний", 100),
+            new MenuItem("Большой", 150)
+        });
+
+        flavorMenu = new Menu("Вкус", new List<MenuItem>
+        {
+            new MenuItem("Шоколадный", 30),
+            new MenuItem("Ванильный", 25),
+            new MenuItem("Фруктовый", 35)
+        });
+
+        quantityMenu = new Menu("Количество", new List<MenuItem>
+        {
+            new MenuItem("1 шт.", 0),
+            new MenuItem("2 шт.", 10),
+            new MenuItem("3 шт.", 20)
+        });
+
+        glazeMenu = new Menu("Глазурь", new List<MenuItem>
+        {
+            new MenuItem("Шоколадная", 10),
+            new MenuItem("Карамельная", 15),
+            new MenuItem("Сливочная", 12)
+        });
+
+        decorMenu = new Menu("Декор", new List<MenuItem>
+        {
+            new MenuItem("Цветные конфеты", 5),
+            new MenuItem("Шоколадные стружки", 7),
+            new MenuItem("Фрукты", 8)
+        });
+
+        cakes = new List<Dictionary<string, MenuItem>>();
+    }
+
+    public void MakeOrder()
+    {
+        MenuItem shape = shapeMenu.ChooseOption();
+        MenuItem size = sizeMenu.ChooseOption();
+        MenuItem flavor = flavorMenu.ChooseOption();
+        MenuItem quantity = quantityMenu.ChooseOption();
+        MenuItem glaze = glazeMenu.ChooseOption();
+        MenuItem decor = decorMenu.ChooseOption();
+
+        if (shape == null || size == null || flavor == null || quantity == null || glaze == null || decor == null)
+        {
+            Console.WriteLine("Заказ был отменен.");
+            return;
+        }
+
+        Dictionary<string, MenuItem> cake = new Dictionary<string, MenuItem>()
+        {
+            { "Форма", shape },
+            { "Размер", size },
+            { "Вкус", flavor },
+            { "Количество", quantity },
+            { "Глазурь", glaze },
+            { "Декор", decor }
+        };
+
+        cakes.Add(cake);
+
+        int totalPrice = 0;
+        foreach (var item in cake.Values)
+        {
+            totalPrice += item.Price;
+        }
+        Console.WriteLine("Суммарная цена заказа: " + totalPrice);
+    }
+
+    public void SaveOrderToFile()
+    {
+        using (StreamWriter file = new StreamWriter("История_заказов.txt", true))
+        {
+            foreach (var cake in cakes)
+            {
+                foreach (var item in cake)
+                {
+                    file.WriteLine($"{item.Key}: {item.Value.Description} - {item.Value.Price} руб.");
+                }
+                file.WriteLine("-----");
+            }
+        }
+    }
+
+    public void ShowOrderHistory()
+    {
+        using (StreamReader file = new StreamReader("История_заказов.txt"))
+        {
+            Console.WriteLine(file.ReadToEnd());
+        }
+    }
+}
+
+class Menu
+{
+    private string title;
+    private List<MenuItem> options;
+
+    public Menu(string title, List<MenuItem> options)
+    {
+        this.title = title;
+        this.options = options;
+    }
+
+    public MenuItem ChooseOption()
+    {
+        while (true)
+        {
+            Console.WriteLine(title);
+            for (int i = 0; i < options.Count; i++)
+            {
+                Console.WriteLine((i + 1) + ". " + options[i].Description + " - " + options[i].Price + " руб.");
+            }
+
+            string userInput = Console.ReadLine();
+            if (userInput == "esc")
+            {
+                return null;
+            }
+
+            try
+            {
+                int optionIndex = int.Parse(userInput) - 1;
+                if (optionIndex >= 0 && optionIndex < options.Count)
+                {
+                    return options[optionIndex];
+                }
+                else
+                {
+                    Console.WriteLine("Неверный пункт меню. Попробуйте снова.");
+                }
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Неверный пункт меню. Попробуйте снова.");
+            }
+        }
+    }
+}
+
+class MenuItem
+{
+    public string Description { get; set; }
+    public int Price { get; set; }
+
+    public MenuItem(string description, int price)
+    {
+        Description = description;
+        Price = price;
+    }
+}
+
+class ArrowMenu
+{
+    public static void ShowMenu(CakeOrder order)
+    {
+        while (true)
+        {
+            Console.WriteLine("Нажмите Enter для отображения меню или esc для выхода: ");
+            string userInput = Console.ReadLine();
+            if (userInput == "esc")
+            {
+                order.SaveOrderToFile();
+                order.ShowOrderHistory();
+                return;
+            }
+
+            order.MakeOrder();
+        }
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        CakeOrder order = new CakeOrder();
+        ArrowMenu.ShowMenu(order);
+    }
+}

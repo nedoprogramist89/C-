@@ -1,0 +1,150 @@
+using System;
+using System.IO;
+using System.Diagnostics;
+using System.Linq;
+
+public static class FileManager
+{
+    public static void DisplayDrives()
+    {
+        DriveInfo[] drives = DriveInfo.GetDrives();
+        foreach (DriveInfo drive in drives)
+        {
+            Console.WriteLine($"Диск: {drive.Name}, Свободное место: {drive.TotalFreeSpace / (1024 * 1024 * 1024)} GB");
+        }
+    }
+
+    public static void DisplayFolderContents(string path, int selectedIdx)
+    {
+        Console.WriteLine($"{path}:");
+
+        string[] directories = Directory.GetDirectories(path);
+        string[] files = Directory.GetFiles(path);
+        int totalItems = directories.Length + files.Length;
+
+        for (int i = 0; i < totalItems; i++)
+        {
+            string itemName;
+            if (i < directories.Length)
+            {
+                itemName = $"[D] {Path.GetFileName(directories[i])}";
+            }
+            else
+            {
+                itemName = $"[F] {Path.GetFileName(files[i - directories.Length])}, Size: {new FileInfo(files[i - directories.Length]).Length / 1024} KB";
+            }
+
+            if (i == selectedIdx)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan; 
+            }
+
+            Console.WriteLine(itemName);
+
+            if (i == selectedIdx)
+            {
+                Console.ResetColor();
+            }
+        }
+    }
+
+    public static void ExecuteFile(string filePath)
+    {
+        Process.Start(filePath);
+    }
+}
+
+public static class ArrowHandler
+{
+    public static void HandleKeyPress(ConsoleKeyInfo key, ref string currentPath, ref int selectedIdx)
+    {
+        switch (key.Key)
+        {
+            case ConsoleKey.UpArrow:
+                MoveSelection(ref selectedIdx, -1);
+                break;
+
+            case ConsoleKey.DownArrow:
+                MoveSelection(ref selectedIdx, 1);
+                break;
+
+            case ConsoleKey.Enter:
+                EnterDirectory(ref currentPath, selectedIdx);
+                break;
+
+            case ConsoleKey.Escape:
+                ReturnToDriveSelection(ref currentPath, ref selectedIdx);
+                break;
+
+            default:
+                Console.WriteLine("Некорректный ввод.Повторите попытку");
+                break;
+        }
+    }
+
+    private static void MoveSelection(ref int selectedIdx, int direction)
+    {
+        selectedIdx = (selectedIdx + direction) < 0 ? 0 : selectedIdx + direction;
+    }
+
+    private static void EnterDirectory(ref string currentPath, int selectedIdx)
+    {
+        var directories = Directory.GetDirectories(currentPath);
+        var files = Directory.GetFiles(currentPath);
+        var totalItems = directories.Length + files.Length;
+
+        if (totalItems == 0)
+        {
+            return;
+        }
+
+        string selectedPath;
+        if (selectedIdx < directories.Length)
+        {
+            selectedPath = directories[selectedIdx];
+        }
+        else
+        {
+            selectedPath = files[selectedIdx - directories.Length];
+            FileManager.ExecuteFile(selectedPath);
+            return;
+        }
+
+        if (Directory.Exists(selectedPath))
+        {
+            currentPath = selectedPath;
+        }
+
+        FileManager.DisplayFolderContents(currentPath, selectedIdx);
+    }
+
+    private static void ReturnToDriveSelection(ref string currentPath, ref int selectedIdx)
+    {
+        if (Directory.GetParent(currentPath) != null)
+        {
+            currentPath = Directory.GetParent(currentPath).FullName;
+            selectedIdx = 0; 
+            FileManager.DisplayFolderContents(currentPath, selectedIdx);
+        }
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        string currentPath = @"C:\"; 
+        int selectedIdx = 0;
+
+        while (true)
+        {
+            Console.Clear();
+            FileManager.DisplayFolderContents(currentPath, selectedIdx);
+
+            Console.WriteLine("\nВыберите файл с помощью стрелок Вверх и вниз(ESC назад).");
+
+            ConsoleKeyInfo key = Console.ReadKey();
+            ArrowHandler.HandleKeyPress(key, ref currentPath, ref selectedIdx);
+        }
+    }
+}

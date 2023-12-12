@@ -1,5 +1,230 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Text.Json;
+
+public class HotKey
 {
+    public ConsoleKey Key { get; set; }
+    public string Action { get; set; }
+    public string FilePath { get; set; }
+}
+
+public static class HotKeyManager
+{
+    public static List<HotKey> LoadHotKeys(string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                string json = File.ReadAllText(filePath);
+                return JsonSerializer.Deserialize<List<HotKey>>(json);
+            }
+            else
+            {
+                return new List<HotKey>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка при чтении файла: {ex.Message}");
+            return new List<HotKey>();
+        }
+    }
+
+    public static void SaveHotKeys(List<HotKey> hotKeys, string filePath)
+    {
+        try
+        {
+            string json = JsonSerializer.Serialize(hotKeys, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(filePath, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка при записи файла: {ex.Message}");
+        }
+    }
+
+}
+ 
+
+public class ArrowMenu
+{
+    public enum MenuAction
+    {
+        F1 = -1,
+        F2 = -2,
+        F10 = -10,
+        Backspace = -11
+    }
+
+    public MenuAction ShowMenu(List<HotKey> hotKeys)
+    {
+        Console.Clear();
+        Console.WriteLine("Горячие клавиши:");
+
+        foreach (var hotKey in hotKeys)
+        {
+            Console.WriteLine($"{hotKey.Key}: {hotKey.Action} - {hotKey.FilePath}");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("Меню:");
+        Console.WriteLine("F1 - Создать новую горячую клавишу");
+        Console.WriteLine("F2 - Изменить горячую клавишу");
+        Console.WriteLine("F10 - Перейти к выполнению горячих клавиш");
+        Console.WriteLine("Backspace - Выйти");
+
+        ConsoleKeyInfo keyInfo = Console.ReadKey();
+        Console.Clear();
+
+        switch (keyInfo.Key)
+        {
+            case ConsoleKey.F1:
+                return MenuAction.F1;
+            case ConsoleKey.F2:
+                return MenuAction.F2;
+            case ConsoleKey.F10:
+                return MenuAction.F10;
+            case ConsoleKey.Backspace:
+                return MenuAction.Backspace;
+            default:
+                return 0;
+        }
+    }
+}
+
+public class HotKeyManagerApp
+{
+    private List<HotKey> hotKeys;
+    private ArrowMenu arrowMenu;
+
+    public HotKeyManagerApp()
+    {
+        hotKeys = HotKeyManager.LoadHotKeys("hotkeys.json");
+        arrowMenu = new ArrowMenu();
+    }
+
+    public void Run()
+    {
+        while (true)
+        {
+            ArrowMenu.MenuAction action = arrowMenu.ShowMenu(hotKeys);
+
+            switch (action)
+            {
+                case ArrowMenu.MenuAction.F1:
+                    // Создание новой горячей клавиши
+                    Console.Write("Введите новую горячую клавишу (например, A, B, F3 и т.д.): ");
+                    ConsoleKeyInfo keyInfo = Console.ReadKey();
+
+                    // Проверка на дублирование клавиши
+                    if (!hotKeys.Exists(hk => hk.Key == keyInfo.Key))
+                    {
+                        hotKeys.Add(new HotKey
+                        {
+                            Key = keyInfo.Key,
+                           
+                            FilePath = "Путь к файлу"
+                        });
+                    }
+                    else
+                    {
+                        Console.WriteLine("\nКлавиша уже занята. Нажмите любую клавишу для продолжения.");
+                        Console.ReadKey();
+                    }
+                    break;
+                case ArrowMenu.MenuAction.F2:
+                    // Изменение горячей клавиши
+                    Console.Write("Введите горячую клавишу для изменения: ");
+                    ConsoleKeyInfo editKeyInfo = Console.ReadKey();
+                    Console.Clear();
+
+                    HotKey editHotKey = hotKeys.Find(hk => hk.Key == editKeyInfo.Key);
+
+                    if (editHotKey != null)
+                    {
+                        Console.WriteLine($"Изменение горячей клавиши {editHotKey.Key}: {editHotKey.Action} - {editHotKey.FilePath}");
+                        
+                    
+                        Console.WriteLine("Введите новый путь к файлу:");
+                        editHotKey.FilePath = Console.ReadLine();
+                        Console.WriteLine("Горячая клавиша изменена. Нажмите любую клавишу для продолжения.");
+                        Console.ReadKey();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Горячая клавиша не найдена. Нажмите любую клавишу для продолжения.");
+                        Console.ReadKey();
+                    }
+                    break;
+                case ArrowMenu.MenuAction.F10:
+                    // Переключение в меню выполнения горячих клавиш
+                    ExecuteHotKeys();
+                    break;
+                case ArrowMenu.MenuAction.Backspace:
+                    // Возврат в главное меню
+                    HotKeyManager.SaveHotKeys(hotKeys, "hotkeys.json");
+                    return;
+            }
+        }
+
+    }
+
+    private void ExecuteHotKeys()
+    {
+        Console.Clear();
+        Console.WriteLine("Меню выполнения горячих клавиш:");
+
+        foreach (var hotKey in hotKeys)
+        {
+            Console.WriteLine($"{hotKey.Key}: {hotKey.Action} - {hotKey.FilePath}");
+        }
+
+        Console.WriteLine("Выберите горячую клавишу для выполнения (Backspace - Назад):");
+
+        ConsoleKeyInfo keyInfo = Console.ReadKey();
+        Console.Clear();
+
+        if (keyInfo.Key == ConsoleKey.Backspace)
+        {
+            return;
+        }
+
+        HotKey selectedHotKey = hotKeys.Find(hk => hk.Key == keyInfo.Key);
+
+        if (selectedHotKey != null)
+        {
+            Console.WriteLine($"Выполняется: {selectedHotKey.Action}");
+
+            try
+            {
+                Process.Start(selectedHotKey.FilePath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при открытии файла: {ex.Message}");
+            }
+
+            Console.WriteLine("Нажмите любую клавишу для продолжения.");
+            Console.ReadKey();
+        }
+        else
+        {
+            Console.WriteLine("Неверная клавиша. Нажмите любую клавишу для продолжения.");
+            Console.ReadKey();
+        }
+    }
+}
 
 
-  
+class Program
+{
+    static void Main(string[] args)
+    {
+        HotKeyManagerApp app = new HotKeyManagerApp();
+        app.Run();
+    }
 }
